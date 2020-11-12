@@ -1,0 +1,648 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en-US"><generator uri="https://jekyllrb.com/" version="3.9.0">Jekyll</generator><link href="https://tonybounty.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://tonybounty.github.io/" rel="alternate" type="text/html" hreflang="en-US" /><updated>2020-11-12T11:15:59+01:00</updated><id>https://tonybounty.github.io/feed.xml</id><title type="html">TonyBounty Blog</title><author><name>TonyBounty™</name></author><entry><title type="html">Challenge DGSE/ESIEE - Steganosaurus</title><link href="https://tonybounty.github.io/Challenge_DGSE_ESIEE_-_Steganosaurus/" rel="alternate" type="text/html" title="Challenge DGSE/ESIEE - Steganosaurus" /><published>2020-11-10T15:59:46+01:00</published><updated>2020-11-10T15:59:46+01:00</updated><id>https://tonybounty.github.io/Challenge_DGSE_ESIEE_-_Steganosaurus</id><content type="html" xml:base="https://tonybounty.github.io/Challenge_DGSE_ESIEE_-_Steganosaurus/">&lt;blockquote&gt;
+  &lt;p&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=s0rTz2NY3RQ&quot; target=&quot;_blank&quot;&gt;&lt;strong&gt;Avertissement : vous allez pénétrer dans les arcanes de la DGSE, il vous saurait gré de 
+lire ce WriteUp avec la compilation du service en fond sonore, cliquez ici ou la&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/steganosaurus.jpg&quot; /&gt;
+&lt;figcaption&gt;© Nobu Tamura&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Sacrés agents du &lt;em&gt;Service Action&lt;/em&gt; ! Ils nous ont dégoté une clé USB abandonnée dans un camion de 
+livraison. Elle y contient apparemment les plus sombres secrets de notre ennemie juré : &lt;strong&gt;Evil 
+Country&lt;/strong&gt;. On nous transmet pour analyse un fichier nommé &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;message&lt;/code&gt;, représentant le &lt;em&gt;filesystem&lt;/em&gt; de cette clé.&lt;/p&gt;
+
+&lt;p&gt;Le challenge est classé dans la catégorie Forensic, commençons par passer un petit coup de commande &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;file&lt;/code&gt;,
+et un tour de moulinette avec &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt; :&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;file message
+message: DOS/MBR boot sector, code offset 0x58+2, OEM-ID &lt;span class=&quot;s2&quot;&gt;&quot;mkfs.fat&quot;&lt;/span&gt;, Media descriptor 0xf8, sectors/track 32, heads 64, hidden sectors 7256064, sectors 266240 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;volumes &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; 32 MB&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;, FAT &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;32 bit&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;, sectors/FAT 2048, reserved 0x1, serial number 0xccd8d7cd, unlabeled
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;binwalk &lt;span class=&quot;nt&quot;&gt;-e&lt;/span&gt; message
+DECIMAL       HEXADECIMAL     DESCRIPTION                                                                                                                       
+&lt;span class=&quot;nt&quot;&gt;--------------------------------------------------------------------------------&lt;/span&gt;                                                                                
+2114048       0x204200        PNG image, 1000 x 514, 8-bit/color RGBA, non-interlaced                                                                           
+3061760       0x2EB800        Zip archive data, at least v2.0 to extract, compressed size: 318, uncompressed size: 442, name: kotlin/ranges/UIntProgressionItera
+tor.kotlin_metadata                                                                                                                                             
+3085941       0x2F1675        Zip archive data, at least v2.0 to extract, compressed size: 459, uncompressed size: 725, name: kotlin/collections/HashMap.kotlin_
+metadata                                                                                                                                                        
+3086472       0x2F1888        Zip archive data, at least v2.0 to extract, compressed size: 255, uncompressed size: 320, name: kotlin/SuspendKt.kotlin_metadata  
+3086789       0x2F19C5
+&lt;span class=&quot;nt&quot;&gt;---&lt;/span&gt; 3&amp;lt; snip &lt;span class=&quot;nt&quot;&gt;---&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Effectivement, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;file&lt;/code&gt; reconnait un système de fichier FAT32, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt; quant a lui va passer au
+peigne fin chaque octet du fichier pour essayer de trouver des en-têtes de format de fichier connus. Ainsi il
+trouve un fichier PNG d’une résolution de 100x514, des archives Zip etc… L’option &lt;strong&gt;-e&lt;/strong&gt; permet
+d’extraire automatiquement ce qu’il trouve.&lt;/p&gt;
+
+&lt;p&gt;Gardons les résultats de &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt; pour plus tard, et essayons de monter le fichier pour 
+accéder à cette &lt;em&gt;partition&lt;/em&gt; FAT32 :&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;mount message mnt/
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;ls&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-l&lt;/span&gt; mnt/
+total 37327
+&lt;span class=&quot;nt&quot;&gt;-rwxr-xr-x&lt;/span&gt; 1 root root      532 Oct 15 17:48 readme
+&lt;span class=&quot;nt&quot;&gt;-rwxr-xr-x&lt;/span&gt; 1 root root 38221331 Jul  8 16:02 steganausorus.apk
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Deux fichiers sont présents, dont un possédant l’extension en .apk, qui nous fait penser
+naturellement au format &lt;em&gt;Android Application Package&lt;/em&gt;. l’APK est un paquet
+au format Zip servant de conteneur pour une application Android. Regardons le &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;readme&lt;/code&gt;, et
+parce que ça ne mange pas de pain un petit coup de &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;file&lt;/code&gt; sur l’APK pour s’assurer du format :&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cat readme
+Bonjour evilcollegue !
+Je te laisse ici une note d'avancement sur mes travaux !
+J'ai réussi à implémenter complétement l'algorithme que j'avais présenté au QG au sein d'une application.
+Je te joins également discrétement mes premiers résultats avec de vraies données sensibles ! Ils sont bons pour la corbeille mais ça n'est que le début !
+Je t'avertis, l'application souffre d'un serieux defaut de performance ! je m'en occuperai plus tard.
+contente-toi de valider les résultats.
+Merci d'avance
+
+For the worst,
+
+QASKAB
+
+$ file steganosaurus.apk
+steganausorus.apk: Zip archive data, at least v2.0 to extract
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;D’après le &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;readme&lt;/code&gt; il fleure bon que l’on va devoir analyser un algorithme contenu dans
+une application. De plus la commande &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;file&lt;/code&gt; reconnait une archive Zip. On est quasiment certain d’être
+en présence d’une application Android, regardons sans plus attendre son contenu :&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;unzip &lt;span class=&quot;nt&quot;&gt;-l&lt;/span&gt; steganosaurus.apk
+Archive:  steganausorus.apk                                                                                                                                     
+  Length      Date    Time    Name                                                                                                                              
+&lt;span class=&quot;nt&quot;&gt;---------&lt;/span&gt;  &lt;span class=&quot;nt&quot;&gt;----------&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-----&lt;/span&gt;   &lt;span class=&quot;nt&quot;&gt;----&lt;/span&gt;                                                                                                                              
+     4224  1980-00-00 00:00   AndroidManifest.xml                                                                                                               
+     1159  1980-00-00 00:00   META-INF/CERT.RSA                                                                                                                 
+    34878  1980-00-00 00:00   META-INF/CERT.SF                                                                                                                  
+    34835  1980-00-00 00:00   META-INF/MANIFEST.MF                                                                                                              
+        6  1980-00-00 00:00   META-INF/androidx.activity_activity.version                                                                                       
+        6  1980-00-00 00:00   META-INF/androidx.arch.core_core-runtime.version                                                                                  
+        6  1980-00-00 00:00   META-INF/androidx.core_core.version                                                                                               
+        6  1980-00-00 00:00   META-INF/androidx.customview_customview.version                                                                                   
+        6  1980-00-00 00:00   META-INF/androidx.fragment_fragment.version                                                                                       
+        6  1980-00-00 00:00   META-INF/androidx.lifecycle_lifecycle-livedata-core.version                                                                       
+        6  1980-00-00 00:00   META-INF/androidx.lifecycle_lifecycle-livedata.version                                                                            
+        6  1980-00-00 00:00   META-INF/androidx.lifecycle_lifecycle-runtime.version                                                                             
+        6  1980-00-00 00:00   META-INF/androidx.lifecycle_lifecycle-viewmodel.version  
+&lt;span class=&quot;nt&quot;&gt;---&lt;/span&gt; 3&amp;lt; snip &lt;span class=&quot;nt&quot;&gt;---&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AndroidManifest.xml&lt;/code&gt;… c’est manifestement une application Android ! Pour naviguer et
+décompiler le contenu de ce paquet APK, nous utiliserons l’outil
+&lt;a href=&quot;https://github.com/skylot/jadx&quot;&gt;Jadx&lt;/a&gt; &lt;em&gt;Dex to Java decompiler&lt;/em&gt; :&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ jadx-gui steganosaurus.apk
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Une fois dans Jadx avec le fichier &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;steganosaurus.apk&lt;/code&gt; chargé, nous cliquons sur le
+fichier &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Resources/AndroidManifest.xml&lt;/code&gt; qui est l’un des plus importants d’une application
+Android. En effet ce fichier est obligatoire et contient les informations générales au bon
+fonctionnement de cette dernière. C’est un excellent point de départ pour faire
+connaissance avec &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;steganausorus&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;L’application requière l’accès à 3 ressources :&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;écriture sur un stockage externe (carte sd…)&lt;/li&gt;
+  &lt;li&gt;lecture sur un stockage externe (carte sd…)&lt;/li&gt;
+  &lt;li&gt;Accès Internet&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/manifest_permissions.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;Permissions demandées par l'application&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;La balise &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;application&amp;gt;&lt;/code&gt; et ses attributs nous renseigne sur l’application elle
+même, comme son nom qui est &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stegapp&lt;/code&gt; dans &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;android:label&lt;/code&gt; et surtout son point d’entrée
+dans le code par &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;android:name=io.flutter.app.FlutterApplication&lt;/code&gt;, précisant qu’elle est la
+première classe à appeler.&lt;/p&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/android_manifest2.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;Balise &amp;lt;application&amp;gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Cette classe n’est d’ailleurs pas écrite par l’auteur de l’application, mais elle correspond au kit de
+développement &lt;a href=&quot;http://flutter.dev&quot;&gt;Flutter&lt;/a&gt;, l’analyser serait une perte de temps.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Flutter a été créé par Google et met à disposition tout un tas de classes pour développer des
+interfaces graphiques mutliplateforme sur la base d’un seul langage le
+&lt;a href=&quot;http://dart.dev&quot;&gt;Dart&lt;/a&gt;. Le Dart quant à lui est un langage de programmation orienté objet
+se rapprochant syntaxiquement du C, il génère principalement du code natif.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Le code écrit par l’un des membres d’&lt;strong&gt;Evil Country&lt;/strong&gt; se situe surement dans l’application
+&lt;em&gt;Flutter/Dart&lt;/em&gt; elle même. Il va nous falloir trouver un moyen le récupérer et de la
+décompiler, car malheureusement Jadx comprend que le format .dex &lt;em&gt;Dalvik Executable
+Format&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Heureusement, nous avons une des plus impressionnante compétence d’un cétéfeur (un gars
+qui fait des CTF), celle de pouvoir diagonaliser l’intégralité d’une doc d’un gros SDK en
+un temps record et le don sacré dans la composition de bons mots-clés pour &lt;em&gt;sniper&lt;/em&gt; la
+ressource nécessaire, c’est à dire celle-ci : 
+&lt;a href=&quot;https://medium.com/@rondalal54/reverse-engineering-flutter-apps-5d620bb105c0&quot;&gt;Reverse Engineering Flutter Apps&lt;/a&gt;
+:&lt;/p&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/flutter_blog.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;“Pardon Monsieur? Si l’application est restée en mode debug on peut récupérer le code
+source avec en bonus les commentaires dans le fichier &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;kernel_blob.bin&lt;/code&gt; de l’apk ?”&lt;/li&gt;
+  &lt;li&gt;“Oui Madame!”&lt;/li&gt;
+  &lt;li&gt;“Pôpôpôôôô!”&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/kernel_blog_jadx.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;&lt;em&gt;Target&lt;/em&gt; localisée ! Pour extraire le fichier il suffit d’ouvrir le paquet APK dans 7Zip par
+exemple, ou tout simplement de le dézipper. Le contenu est censé être du bytecode + peut-être le code en clair,
+voyons ce que nous trouve la commande &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;strings&lt;/code&gt; :&lt;/p&gt;
+
+&lt;div class=&quot;language-go highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strings&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;10&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;kernel_blob&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;---&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;snip&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;---&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dartlang&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sdk&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;c&quot;&gt;///third_party/dart/sdk/lib/_http/http.dart&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;       &lt;span class=&quot;c&quot;&gt;// Copyright (c) 2013, the Dart project authors.  Please see the AUTHORS file&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;// for details. All rights reserved. Use of this source code is governed by a&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;// BSD-style license that can be found in the LICENSE file.&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;// @dart = 2.6&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;library&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dart&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dart&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;async&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dart&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;collection&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;HashMap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;HashSet&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;Queue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;ListQueue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;LinkedList&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;LinkedListEntry&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;UnmodifiableMapView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dart&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;convert&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;---&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;snip&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;---&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Well Done &lt;strong&gt;Evil Country&lt;/strong&gt;! Qu’est ce c’est beau et tellement rare d’avoir un code lisible et indenté depuis la sortie
+de la commande &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;strings&lt;/code&gt;, un moment rare, restons quelques minutes à contempler…&lt;/p&gt;
+
+&lt;p&gt;Comme nous sommes des pros de la DGSE, on va extraire proprement le code lisible du byte code, pour
+avoir une belle base de travail. En regardant un peu le code on s’aperçoit qu’il contient un paquet
+de lignes, et qu’elles correspondent au code du SDK Flutter. Il nous faut trouver et isoler le
+code du fameux &lt;em&gt;QASKAB&lt;/em&gt;. Il doit bien y avoir un point d’entrée matérialisé par une fonction 
+ou un truc du genre… Concentration… Diagonalisation… Following the white rabbit… 
+Et Bim &lt;a href=&quot;https://dart.dev/guides/language/language-tour#the-main-function&quot;&gt;ici&lt;/a&gt;. Oui un pauvre &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;main()&lt;/code&gt;,
+manque total d’originalité de la part du Dart.&lt;/p&gt;
+
+&lt;p&gt;On tapote frénétiquement sur &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;n&lt;/code&gt; dans &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Vim&lt;/code&gt; avec le pattern mal choisi &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;main()&lt;/code&gt;. Il nous faut 
+tomber sur le bon. Pour cela on remarque en amont de chaque &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;main()&lt;/code&gt; une en-tête de
+début de fichier Dart, avec le chemin vers celui-ci émanant de la machine du développeur. Il devient
+facile de faire le &lt;em&gt;distinguo&lt;/em&gt; entre un &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;main()&lt;/code&gt; perdu de la bibliothèque Flutter et celui-là
+par exemple :&lt;/p&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/code_main.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Extrayons ce fichier. Pour cela nous utilisons ici une recette ultra sophistiquée :&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vim kernel_blog.bin&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;530089GV530380Gy&lt;/code&gt; &lt;em&gt;(on respecte la casse hein)&lt;/em&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:e le_code.dart&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;p:wq&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;C’est une &lt;a href=&quot;https://www.vimgolf.com/&quot;&gt;recette&lt;/a&gt; de chef, comprendra qui pourra. Sinon on peut le faire
+à la souris, mais ça va mal passer à la &lt;em&gt;Piscine&lt;/em&gt; car c’est les ptis gars du 
+&lt;a href=&quot;https://fr.wikipedia.org/wiki/Government_Communications_Headquarters&quot;&gt;GCHQ&lt;/a&gt; qui font ça.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;On a beau être en couple avec &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Vim&lt;/code&gt; depuis longtemps, mais quand il s’agit d’analyser et surtout
+de naviguer efficacement dans du code inconnu, rien ne vaut la souris (&lt;em&gt;“tu viens pas de dire que 
+c’est au GCHQ qu’on fait ça?” “non mais ça c’était dans l’autre paragraphe”&lt;/em&gt;), pour cela 
+voici plusieurs armes suivant les caractéristiques du soldat :&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VsCode&lt;/code&gt; si t’as pas de barbe&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VsCodium&lt;/code&gt; barbe naissante&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Emacs&lt;/code&gt; barbe de classe &lt;a href=&quot;https://en.wikipedia.org/wiki/Richard_Stallman&quot;&gt;Stallman&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;ces 3 éditeurs de code / IDE ont pour point commun d’avoir une extension Vim, (voir même 
+ &lt;a href=&quot;https://www.emacswiki.org/emacs/Evil&quot;&gt;Evil&lt;/a&gt;… Country?!)
+ouf l’honneur du Service est sauf.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;N’oubliez pas d’installer les extensions qui vont bien : Flutter et Dart. Ouvrez votre
+code, et la c’est noël à Disney Land, de la couleur partout :&lt;/p&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/vscode.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;L’intérêt de VsCode ici, c’est qu’il va nous permettre d’avoir rapidement la doc juste en passant
+la souris sur les classes de bibliothèque, et de faire ressortir les variables dans tout 
+le code quand on place le curseur sur l’une d’elle (matérialisé par un encadré de couleur rose…)&lt;/p&gt;
+
+&lt;p&gt;Bien que le langage Dart nous est inconnu au Service, il est assez facile à comprendre. De
+toutes les manières on a pas le temps d’apprendre a coder en Dart, en plus si vous avez vu la série 
+&lt;em&gt;Le Bureau Des Légendes&lt;/em&gt;, vous êtes au courant que l’on est à peine deux au &lt;em&gt;service informatique&lt;/em&gt;, il y a &lt;a href=&quot;https://www.leparisien.fr/resizer/ru0O3UwrS_7vlpGd6T29I1kDoxc=/932x582/cloudfront-eu-central-1.images.arcpublishing.com/leparisien/32V524TJKF3ZIK3RLZSJJJCSAY.jpg&quot;&gt;lui&lt;/a&gt; et moi.&lt;/p&gt;
+
+&lt;p&gt;Visiblement cette application bidouille une image en entrée pour en ressortir une autre. Avant d’aller plus loin, allons
+voir a quoi ressemble cette APK en l’exécutant sur notre &lt;a href=&quot;https://fr.wikipedia.org/wiki/Teorem&quot;&gt;téléphone&lt;/a&gt; de service… 
+Ah bah non… on ne peut toujours pas installer d’application (ni même Candy Crush…) cette mise à jour n’arrivera donc
+jamais ! Rabattons nous sur un &lt;a href=&quot;https://developer.android.com/studio&quot;&gt;émulateur&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Une fois notre téléphone allumé, il nous reste plus qu’a pousser l’application sur ce
+dernier :&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;adb devices
+List of devices attached
+emulator-5554   device
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;adb push steganausorus.apk /sdcard/Download/
+steganausorus.apk: 1 file...MB/s &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;38221331 bytes &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;0.350s&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;On paramètre le téléphone pour installer des applications non vérifiées, puis on tapote dé-li-ca-te-ment sur
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Stegapp&lt;/code&gt; :&lt;/p&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/android_emulator.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Un message secret à cacher dans une image… un nom évocateur… nous sommes
+très probablement sur une application de stéganographie (quel falair!). On test avec une belle image
+de Labrador pour voir le résultat… Punaise ça rame ! En effet le machin souffre d’un
+&lt;strong&gt;serieux&lt;/strong&gt; problème de performance (on a été prévenu), ça va être râpé pour l’analyse dynamique…&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Dans VsCode par exemple il possible (avec les extensions) de créer une nouvelle
+application Flutter, coller le code que l’on a extrait, puis de faire une analyse dynamique
+en mode live debug.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Maintenant que l’on y voit un peu plus clair, il n’y
+a plus qu’a lire la documentation qui nous est fournie (le code quoi). Un tapotage sur le bouton
+&lt;em&gt;Start Hide &amp;amp; seek game&lt;/em&gt; fait quelques vérifications et appelle la fonction &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;steggapp&lt;/code&gt; avec
+pour paramètres le chemin vers l’image &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_image&lt;/code&gt;, et le texte à dissimuler &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;myController.text&lt;/code&gt;:&lt;/p&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/start_steggapp.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;dans la fonction Build()&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Chaque caractère du message à dissimuler va être transformé en binaire sous forme d’une
+chaîne de caractère ASCII de type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;String&lt;/code&gt; à l’aide de la fonction &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MessageToBinaryString()&lt;/code&gt; (si
+c’est pas explicite ça). Un caractère occupera systématiquement 8 bits, si il fait moins on
+le &lt;em&gt;GaucheCapitonne(padLeft)&lt;/em&gt; avec des 0.
+Par exemple, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BOB&lt;/code&gt; donnera &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;01000010 01001111 01000010&lt;/code&gt; (sans espace) :&lt;/p&gt;
+
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;MessageToBinaryString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pMessage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;Result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bytes&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;utf8&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;encode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pMessage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;forEach&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;toRadixString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;padLeft&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'0'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);});&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Le résultat de la fonction est stocké dans &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binaryStringmessage&lt;/code&gt; :&lt;/p&gt;
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;binaryStringmessage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MessageToBinaryString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pMessage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;L’image est ensuite lue et convertie au format RGBA puis redimensionnée de sorte que
+l’image ai une largeur de 1000 pixels. Cette première constante est très importante, car
+l’image finale embarquant le message fera systématiquement 1000 pixels de large. C’est un
+indicateur fort. D’autre part,
+ces 1000px ne nous rappelle pas quelque chose? Il disait quoi déjà le &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt; du début ?&lt;/p&gt;
+
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;Image&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;aimage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;Image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;fromBytes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;decodedImage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;decodedImage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;imgintlist&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;format:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;Format&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;rgba&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;Image&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;resisedimage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;copyResize&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;aimage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;width:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Un petit rappel sur le format RGBA32 (ou en français RVBA pour Rouge Vert Bleu Alpha) ne
+va pas faire de mal pour comprendre ce qui va suivre. Un pixel de notre image
+est un savant mélange d’intensité de rouge, de vert et de bleu (rappelez vous les trucs 
+moches que vous faisiez en Art Plastique). On parle de canal pour chaque couleur, du coup
+nous avons 3 canaux Rouge Vert Bleu, plus 1 autre appelé Alpha qui se rapporte à l’intensité de transparence de l’image.
+Comme nous sommes dans un format RGBA&lt;strong&gt;32&lt;/strong&gt; pour 32bits(4 octets ), il faut qu’un unique pixel tienne dans…. 32 bits !
+On a 4 canaux à faire entrer là-dedans, et pour éviter les disputes on fait un partage équitable, 
+32bits/4 canaux = 8 bits. Bon voilà, chacun pourra prendre une valeur codée sur 8 bits, 
+c’est à dire de 0 à 255 en notation décimale.&lt;/p&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/rgba.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Il faut aussi respecter l’ordre de lecture du format RGBA32 :&lt;/p&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/rgbabits.png&quot; alt=&quot;&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Revenons à notre image redimensionnée stockée dans &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;resisedimage&lt;/code&gt;, l’application va
+parcourir cette image - donc un tableau de 32bits (= 1 pixel) - puis transformer cette valeur en binaire
+sous forme d’une chaîne de caractère. Un petit problème se pose pendant la conversion en 
+binaire avec &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;toRadixString&lt;/code&gt;, en effet l’ordre des canaux vont être inversés, on se retrouve
+avec du ABGR. On ne rentrera pas dans les détails, c’est une sombre histoire de &lt;a href=&quot;https://fr.wikipedia.org/wiki/Boutisme&quot;&gt;Boutisme&lt;/a&gt; 
+(pas la religion hein). Pour contrer ce problème on remet dans l’ordre les canaux puis on concatène
+tous les pixels dans une MEGA chaîne de caractère &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MegaString&lt;/code&gt;. Remarque importante,
+avec le premier &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;substring(8)&lt;/code&gt; on ignore complètement le canal Alpha.&lt;/p&gt;
+
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;MegaString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;resisedimage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++){&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;RRGGBBString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;resisedimage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;toRadixString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;padLeft&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'0'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;substring&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// ByeBye l'Alpha&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;PixelString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RRGGBBString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;substring&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;24&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)+&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Rouge&lt;/span&gt;
+              &lt;span class=&quot;n&quot;&gt;RRGGBBString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;substring&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)+&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;// Vert&lt;/span&gt;
+              &lt;span class=&quot;n&quot;&gt;RRGGBBString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;substring&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;   &lt;span class=&quot;c1&quot;&gt;// Bleu&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;MegaString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PixelString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Les choses sérieuses commencent, une boucle &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;while&lt;/code&gt; va mouliner tant que l’on a pas traiter
+tous les chiffres binaires de la chaîne &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binaryStringmessage&lt;/code&gt; :&lt;/p&gt;
+
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;messaggelength&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;binaryStringmessage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Juste avant cette boucle une nouvelle variable &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Megastringtosearch&lt;/code&gt; est initialisée avec
+pour valeur le contenu de &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MegaString&lt;/code&gt; tronqué de ses N premiers bits. Où N = taille de MegaString / 4:&lt;/p&gt;
+
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Megastringtosearch&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MegaString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;substring&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MegaString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;round&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;());&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Megastringtosearch&lt;/code&gt; va être notre dictionnaire pour coder notre message (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binaryStringmessage&lt;/code&gt;).
+Dans le &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;while&lt;/code&gt; précédent, une nouvelle boucle est créée. C’est une boucle de recherche.
+Elle va essayé de déterminer la plus grande suite de bits possibles d’un seul bloc correspondant
+à notre message secret. La recherche se fait dans &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Megastringtosearch&lt;/code&gt;. On note la position &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;offset&lt;/code&gt;
+et la longueur &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;lengthtostore&lt;/code&gt; de notre trouvaille :&lt;/p&gt;
+
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// offsettostore != -1, tant que indexOf trouve une suite&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// substringtoFind.length&amp;lt;=messagetohide.length-1, tant qu'on ne dépasse pas notre message&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;offsettostore&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;messagetohide&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;lengthtostore&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// on stocke la taille depuis la pos dans Megastringtosearch&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offsettostore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// on stocke la position dans Megastringtosearch&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// tant qu'on trouve on ajoute un nouveau bit à la recherche&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;messagetohide&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;substring&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// notre chaîne de bits est trouvable dans Megastrintosearch, sinon indexOf retourne -A&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;offsettostore&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Megastringtosearch&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;indexOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Toujours dans notre première boucle, un test est réalisé pour évaluer si l’on a trouvé 
+l’intégralité de notre message dans les données de l’image. Si c’est le cas
+on stoppe la première boucle, sinon on
+continue à chercher un nouveau morceau restant de notre message sous forme de bits. Pour chaque
+bloc trouvé, on stocke la paire de valeurs [&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;offset&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;lenghtostore&lt;/code&gt;] dans le tableau
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;offsetarray&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Tout trouvé ?&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;messagetohide&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+  &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lastoffsettostore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Megastringtosearch&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;indexOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// ça dépasse un peu?&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lastoffsettostore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;==-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// on stocke les résultats dans offsetarray + le bit qui dépasse&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;offsetarray&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;add&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lengthtostore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]);&lt;/span&gt; 
+    &lt;span class=&quot;n&quot;&gt;offsetarray&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;add&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Megastringtosearch&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;indexOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]),&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]);&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// ça dépasse pas:&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;offsetarray&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;add&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Megastringtosearch&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;indexOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;),&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]);&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lastitem&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;offsetarray&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;last&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;//&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;messaggelength&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// on a trouvé qu'un bloc&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// on retire le bloc trouvé&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;messagetohide&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;messagetohide&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;substring&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;messaggelength&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// on stocke le résultat&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;offsetarray&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;add&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lengthtostore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;offsettostore&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;lengthtostore&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// on recommence à trouver un nouveau bloc&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;substringtoFind&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;messagetohide&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;substring&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Bon on récapitule un peu, on a dans l’ordre :&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;notre message secret est transformé en binaire sous forme ASCII &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;101010100...&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;on fait de même avec les pixels de l’image &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;10101011...&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;on fait une table de recherche avec les données de cette image moins les 25% du début&lt;/li&gt;
+  &lt;li&gt;on essaye de trouver une suite identique dans notre message et dans la table&lt;/li&gt;
+  &lt;li&gt;on stocke la position de cette suite sous forme [position,longueur] dans &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;offsetarray&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;on fait cette recherche pour l’intégralité de notre message&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;offsetarray&lt;/code&gt; devient le précieux résultat permettant de retrouver le message secret
+à l’aide de la position|longueur. Il faut donc pouvoir stocker ce tableau dans l’image. C’est
+justement l’étape qui suit.&lt;/p&gt;
+
+&lt;p&gt;Pour cela une nouvelle variable de type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;String&lt;/code&gt; fait son apparition : &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stringtowrite&lt;/code&gt;.
+Comme son nom l’indique (merci &lt;strong&gt;Evil Country&lt;/strong&gt;) elle va contenir notre tableau d’offset
+qui sera écrit au tout début de l’image. Voilà à quoi va ressembler ce début d’image :&lt;/p&gt;
+
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/header.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;et son code :&lt;/p&gt;
+
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offsetdatasize&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;resisedimage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lenghtdatasize&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;binaryStringmessage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lenghtsizebit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lenghtdatasize&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;toRadixString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;datasizebit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offsetdatasize&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;toRadixString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stringtowrite&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// taille de offsetarray + lenghtdatasize&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;stringtowrite&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offsetarray&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;toRadixString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;padLeft&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;datasizebit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'0'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+                  &lt;span class=&quot;n&quot;&gt;lenghtsizebit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;toRadixString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;padLeft&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;datasizebit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'0'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// on ajoute toutes les paires [offset,longueur] &lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;offsetarray&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;forEach&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;listofdata&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;stringtowrite&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;listofdata&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;toRadixString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;padLeft&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;datasizebit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'0'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;listofdata&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;toRadixString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;padLeft&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lenghtsizebit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'0'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;});&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;dataSizeBit&lt;/code&gt; correspond au nombre de bits contenus dans la valeur calculée &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;resised.length * 8 * 3&lt;/code&gt;.
+Comme son nom l’indique, elle va nous renseigner sur la taille d’une donnée de l’en-tête, ou 
+d’un bloc du schéma précédent si l’on préfère. A chaque fois que l’on voudra extraire 
+un message secret d’&lt;strong&gt;Evil Country&lt;/strong&gt; il nous faudra faire le calcul ci-dessus pour déterminer
+comment lire l’en-tête. Note importante,
+dans le code Dart &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;length&lt;/code&gt; retourne le nombre de pixels (RGBA), la taille n’est donc pas en octet,
+mais un multiple de 4 octets. Pour avoir la taille en octet il suffit de diviser
+par 4 : &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Length/4&lt;/code&gt;.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Le premier bloc de notre en-tête contient le nombre de paires [offset,longueur] à lire.&lt;/li&gt;
+  &lt;li&gt;Le deuxième bloc contient la variable &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;lengthsizebite&lt;/code&gt; déterminée en comptant le nombre
+de bits contenus dans le message secret. Elle indique la dimension d’un 
+bloc &lt;em&gt;longueur&lt;/em&gt; qui eux n’ont pas la taille &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;dataSizeBit&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;le reste des blocs correspondent aux paires à lire suivant le nombre récupéré dans le 
+premier point.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Voilà ! Avec ces informations on peut déjà coder notre propre décodeur ! Mais… encore
+faut-il avoir une image à décoder !?  Une image qui d’après notre analyse fait 1000 pixels
+de largeur, et qui en plus devrait avoir des pixels étranges en son début…&lt;/p&gt;
+
+&lt;p&gt;Vous vous souvenez du petit coup de &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt; en début de page ? Il nous avait pas 
+trouvé justement un PNG de 1000 x 514, 8-bits/color RGBA ? Alors ? Bon bah je vais vous
+le dire alors, oui on a un PNG planqué qui a du être normalement extrait si vous avez
+bien utilisé l’option -e de &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt;. Allons voir ça de plus près :&lt;/p&gt;
+
+&lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_message&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;extracted&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;204200&lt;/span&gt; 
+&lt;span class=&quot;n&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;extracted&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;204200&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PNG&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;514&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;color&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;RGBA&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;non&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;interlaced&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eog&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_message&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;extracted&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;204200&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/thepng.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Oh la belle image! Les petites barres veulent surement dire quelque chose, comptons les…. &lt;strong&gt;NON&lt;/strong&gt;.
+Tiens… Il y a des pixels étranges dans le coin supérieur gauche :&lt;/p&gt;
+&lt;figure&gt;
+&lt;img src=&quot;/assets/img/Challenge_DGSE_ESIEE_Steganosaurus/strangepixels.png&quot; alt=&quot;&quot; /&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Cette image a l’air de contenir un grand secret injecté par l’algorithme que l’on a
+analysé plus haut. Réalisons le décodeur. Pour changer du Python on va le faire
+en GoLang… En fait pour ne rien vous cacher, on a pas vraiment le choix, les gars du Service Action
+sont tous des militaires endurcis, il suffit de dire “&lt;a href=&quot;https://en.wikipedia.org/wiki/No-go_pill&quot;&gt;NoGo&lt;/a&gt;” 
+pour les mettre en pétard, du coup on s’est mis au Go, on est plus serein.&lt;/p&gt;
+
+&lt;p&gt;Commençons par faire une petite fonction qui prend en entrée un fichier et nous retourne
+une image RGBA :&lt;/p&gt;
+&lt;div class=&quot;language-golang highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;readFileToImgRGBA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;os&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;File&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RGBA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;srcimg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;png&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;nil&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Errorf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;readImgInRGBA: %w&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;c&quot;&gt;// on récupère les paramètres de notre image&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;srcimg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+	&lt;span class=&quot;c&quot;&gt;// on crée une image vide avec le format RGBA et les paramètres de notre image&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;img&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NewRGBA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;c&quot;&gt;// on copie notre image, en bref on vient de la convertir en RGBA comme dans l'application&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;draw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Draw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;img&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;srcimg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;draw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;img&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;nil&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Pour ceux qui ne connaissent pas trop le Go, l’opérateur &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:=&lt;/code&gt; permet de faire de l’inférence 
+de type (il a dit quoi la ?). En gros on se casse pas la tête à choisir un type, on laisse
+le compilateur choisir, comme avec &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;auto&lt;/code&gt; en C++.&lt;/p&gt;
+
+&lt;p&gt;On se fait plaisir et on fait une autre petite fonction qui prend en entrée un tableau
+d’octets. Elle va nous mouliner tout ça pour en sortir une chaîne de caractère binaire. Plutôt 
+utile n’est-ce pas !&lt;/p&gt;
+
+&lt;div class=&quot;language-golang highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;// convertToBitsString convertit chaque octet en chiffre&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;// binaire sous forme ASCII. Il capitonne de 0 par la gauche&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;// si le nombre de caractère est inférieur à 8 (bits)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;convertToBitsString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;byte&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;string&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strings&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Builder&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// strings.Builder car performant&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;range&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Fprintf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;%08b&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// on convertit + capitonnage&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;strbuild&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// on transforme en  string&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;strbuild&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Vous vous rappelez que l’on n’utilise pas le canal Alpha de l’image pour construire 
+le dictionnaire &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Megastringtosearch&lt;/code&gt; tronqué depuis &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MegaString&lt;/code&gt;. Il nous faut une fonction
+pour filtrer ça:  &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;imgToRGB&lt;/code&gt;  prend une image en RGBA pour retourner un tableau d’octet 
+en RGB &lt;em&gt;sans A&lt;/em&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-golang highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;imgToRGB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;img&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RGBA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;res&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;byte&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;Y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;img&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Max&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Y&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;X&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;img&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Max&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;img&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RGBAAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;g&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;img&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RGBAAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;G&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;img&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RGBAAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;B&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;res&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;res&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;g&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Et pour finir voici la fonction principale, qui est non optimisée mais qui réutilise les
+même nom de variable et la même structure que dans le code Dart :&lt;/p&gt;
+
+&lt;div class=&quot;language-golang highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;imgRGBA&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RGBA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;c&quot;&gt;// on supprime le canal Alpha, RGBA =&amp;gt; tableau octet format RGB&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;imgbytes&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;imgToRGB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;imgRGBA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;c&quot;&gt;// on calcul la taille de l'image RGBA en mémoire&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;imgOrigSize&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;imgRGBA&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Max&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;X&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;imgRGBA&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Max&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;4&lt;/span&gt;
+
+	&lt;span class=&quot;c&quot;&gt;// on calcule la taille dataSizeBit&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;imgPixelLength&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;imgOrigSize&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;4&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// ouais c'est pour la lisibilité le /4&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;offsetDataSize&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;imgPixelLength&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;8&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;3&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Sprintf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;%b&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offsetDataSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+
+	&lt;span class=&quot;c&quot;&gt;// on convertit les octets de l'image en binaire ASCII&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;convertToBitsString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;imgbytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+
+	&lt;span class=&quot;c&quot;&gt;// on tronque le début de megaString&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;megaStringLen&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;4&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;megaOffset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;math&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Round&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;float64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;megaStringLen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;megaStringToSearch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;megaOffset&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// notre dictionnaire&lt;/span&gt;
+
+	&lt;span class=&quot;c&quot;&gt;// strconv.ParseUint(&quot;10101011&quot;, base 2, nombre de bits à lire) = valeur en UINT&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;arraySize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strconv&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ParseUint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;lengthSizeBit64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strconv&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ParseUint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;lengthSizeBit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lengthSizeBit64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;msgDecoded&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;uint64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arraySize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strconv&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ParseUint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// offset N&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dataSizeBit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strconv&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ParseUint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lengthSizeBit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lengthSizeBit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// longueur N&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;megaString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lengthSizeBit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;msgDecoded&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;megaStringToSearch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// notre message décodé mais sous forme binaire&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;c&quot;&gt;// transformation du binaire =&amp;gt; ASCII&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msgDecoded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;8&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strconv&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ParseUint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msgDecoded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Sprintf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;%c&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Verdict :&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;go run decoder.go _message.extracted/204200 
+le message secret: DGSEESIEE&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;FL&lt;span class=&quot;k&quot;&gt;****&lt;/span&gt;R3&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;FIN BRUTALE&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;/assets/files/le_code.dart&quot;&gt;le_code.dart&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;/assets/files/decoder.go&quot;&gt;decoder.go&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://mega.nz/file/boQyCRZb#y6V-0ec5OSaMkJJHwkksvi1Hpa6nUEh-QbqS4Yo-j3Y&quot;&gt;message&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content><author><name>TonyBounty™</name></author><category term="writeup" /><category term="DGSEESIEE" /><category term="Flutter" /><category term="Android" /><category term="Steganography" /><summary type="html">Avertissement : vous allez pénétrer dans les arcanes de la DGSE, il vous saurait gré de lire ce WriteUp avec la compilation du service en fond sonore, cliquez ici ou la</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://tonybounty.github.io/Challenge_DGSE_ESIEE_Steganosaurus/first.png" /><media:content medium="image" url="https://tonybounty.github.io/Challenge_DGSE_ESIEE_Steganosaurus/first.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
