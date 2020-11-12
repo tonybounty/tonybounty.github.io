@@ -648,8 +648,8 @@ le message secret: DGSEESIEE{FL****R3}
 ```
 **FIN BRUTALE**
 
-- [le_code.dart](/assets/files/le_code.dart)
-- [decoder.go](/assets/files/decoder.go)
+- [le_code.dart](/assets/files/Challenge_DGSE_ESIEE_Steganosaurus/le_code.dart)
+- [decoder.go](/assets/files/Challenge_DGSE_ESIEE_Steganosaurus/decoder.go)
 - [message](https://mega.nz/file/boQyCRZb#y6V-0ec5OSaMkJJHwkksvi1Hpa6nUEh-QbqS4Yo-j3Y)
 
 
