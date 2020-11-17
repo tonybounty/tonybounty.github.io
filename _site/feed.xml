@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en-US"><generator uri="https://jekyllrb.com/" version="3.9.0">Jekyll</generator><link href="https://tonybounty.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://tonybounty.github.io/" rel="alternate" type="text/html" hreflang="en-US" /><updated>2020-11-12T11:15:59+01:00</updated><id>https://tonybounty.github.io/feed.xml</id><title type="html">TonyBounty Blog</title><author><name>TonyBounty™</name></author><entry><title type="html">Challenge DGSE/ESIEE - Steganosaurus</title><link href="https://tonybounty.github.io/Challenge_DGSE_ESIEE_-_Steganosaurus/" rel="alternate" type="text/html" title="Challenge DGSE/ESIEE - Steganosaurus" /><published>2020-11-10T15:59:46+01:00</published><updated>2020-11-10T15:59:46+01:00</updated><id>https://tonybounty.github.io/Challenge_DGSE_ESIEE_-_Steganosaurus</id><content type="html" xml:base="https://tonybounty.github.io/Challenge_DGSE_ESIEE_-_Steganosaurus/">&lt;blockquote&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en-US"><generator uri="https://jekyllrb.com/" version="3.9.0">Jekyll</generator><link href="https://tonybounty.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://tonybounty.github.io/" rel="alternate" type="text/html" hreflang="en-US" /><updated>2020-11-17T22:12:01+01:00</updated><id>https://tonybounty.github.io/feed.xml</id><title type="html">TonyBounty Blog</title><author><name>TonyBounty™</name></author><entry><title type="html">Challenge DGSE/ESIEE - Steganosaurus</title><link href="https://tonybounty.github.io/Challenge_DGSE_ESIEE_-_Steganosaurus/" rel="alternate" type="text/html" title="Challenge DGSE/ESIEE - Steganosaurus" /><published>2020-11-10T15:59:46+01:00</published><updated>2020-11-10T15:59:46+01:00</updated><id>https://tonybounty.github.io/Challenge_DGSE_ESIEE_-_Steganosaurus</id><content type="html" xml:base="https://tonybounty.github.io/Challenge_DGSE_ESIEE_-_Steganosaurus/">&lt;blockquote&gt;
   &lt;p&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=s0rTz2NY3RQ&quot; target=&quot;_blank&quot;&gt;&lt;strong&gt;Avertissement : vous allez pénétrer dans les arcanes de la DGSE, il vous saurait gré de 
 lire ce WriteUp avec la compilation du service en fond sonore, cliquez ici ou la&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -32,7 +32,7 @@ metadata
 
 &lt;p&gt;Effectivement, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;file&lt;/code&gt; reconnait un système de fichier FAT32, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt; quant a lui va passer au
 peigne fin chaque octet du fichier pour essayer de trouver des en-têtes de format de fichier connus. Ainsi il
-trouve un fichier PNG d’une résolution de 100x514, des archives Zip etc… L’option &lt;strong&gt;-e&lt;/strong&gt; permet
+trouve un fichier PNG d’une résolution de 1000x514, des archives Zip etc… L’option &lt;strong&gt;-e&lt;/strong&gt; permet
 d’extraire automatiquement ce qu’il trouve.&lt;/p&gt;
 
 &lt;p&gt;Gardons les résultats de &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt; pour plus tard, et essayons de monter le fichier pour 
@@ -92,7 +92,7 @@ Archive:  steganausorus.apk
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AndroidManifest.xml&lt;/code&gt;… c’est manifestement une application Android ! Pour naviguer et
-décompiler le contenu de ce paquet APK, nous utiliserons l’outil
+décompiler ce paquet APK, nous utiliserons l’outil
 &lt;a href=&quot;https://github.com/skylot/jadx&quot;&gt;Jadx&lt;/a&gt; &lt;em&gt;Dex to Java decompiler&lt;/em&gt; :&lt;/p&gt;
 
 &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ jadx-gui steganosaurus.apk
@@ -117,9 +117,9 @@ connaissance avec &lt;code class=&quot;language-plaintext highlighter-rouge&quot
 &lt;figcaption&gt;Permissions demandées par l'application&lt;/figcaption&gt;
 &lt;/figure&gt;
 
-&lt;p&gt;La balise &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;application&amp;gt;&lt;/code&gt; et ses attributs nous renseigne sur l’application elle
+&lt;p&gt;La balise &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;application&amp;gt;&lt;/code&gt; et ses attributs nous renseignent sur l’application elle
 même, comme son nom qui est &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stegapp&lt;/code&gt; dans &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;android:label&lt;/code&gt; et surtout son point d’entrée
-dans le code par &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;android:name=io.flutter.app.FlutterApplication&lt;/code&gt;, précisant qu’elle est la
+dans le code par &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;android:name=io.flutter.app.FlutterApplication&lt;/code&gt;, précisant quelle est la
 première classe à appeler.&lt;/p&gt;
 
 &lt;figure&gt;
@@ -282,14 +282,14 @@ steganausorus.apk: 1 file...MB/s &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;3
 &lt;/figure&gt;
 
 &lt;p&gt;Un message secret à cacher dans une image… un nom évocateur… nous sommes
-très probablement sur une application de stéganographie (quel falair!). On test avec une belle image
+très probablement sur une application de stéganographie (quel flair!). On test avec une belle image
 de Labrador pour voir le résultat… Punaise ça rame ! En effet le machin souffre d’un
 &lt;strong&gt;serieux&lt;/strong&gt; problème de performance (on a été prévenu), ça va être râpé pour l’analyse dynamique…&lt;/p&gt;
 
 &lt;blockquote&gt;
   &lt;p&gt;Dans VsCode par exemple il possible (avec les extensions) de créer une nouvelle
-application Flutter, coller le code que l’on a extrait, puis de faire une analyse dynamique
-en mode live debug.&lt;/p&gt;
+&lt;em&gt;application Flutter&lt;/em&gt;, de coller le code que l’on a extrait, puis de faire une analyse dynamique
+en mode &lt;em&gt;live debug&lt;/em&gt;.&lt;/p&gt;
 &lt;/blockquote&gt;
 
 &lt;p&gt;Maintenant que l’on y voit un peu plus clair, il n’y
@@ -305,7 +305,7 @@ pour paramètres le chemin vers l’image &lt;code class=&quot;language-plaintex
 &lt;p&gt;Chaque caractère du message à dissimuler va être transformé en binaire sous forme d’une
 chaîne de caractère ASCII de type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;String&lt;/code&gt; à l’aide de la fonction &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MessageToBinaryString()&lt;/code&gt; (si
 c’est pas explicite ça). Un caractère occupera systématiquement 8 bits, si il fait moins on
-le &lt;em&gt;GaucheCapitonne(padLeft)&lt;/em&gt; avec des 0.
+le &lt;em&gt;capitonne par la gauche(padLeft)&lt;/em&gt; avec des 0.
 Par exemple, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BOB&lt;/code&gt; donnera &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;01000010 01001111 01000010&lt;/code&gt; (sans espace) :&lt;/p&gt;
 
 &lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;MessageToBinaryString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pMessage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
@@ -324,7 +324,7 @@ Par exemple, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;
 l’image ai une largeur de 1000 pixels. Cette première constante est très importante, car
 l’image finale embarquant le message fera systématiquement 1000 pixels de large. C’est un
 indicateur fort. D’autre part,
-ces 1000px ne nous rappelle pas quelque chose? Il disait quoi déjà le &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt; du début ?&lt;/p&gt;
+ces 1000px ne nous évoquent pas quelque chose? Il disait quoi déjà le &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binwalk&lt;/code&gt; du début ?&lt;/p&gt;
 
 &lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;Image&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;aimage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;Image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;fromBytes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;decodedImage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;decodedImage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;imgintlist&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;format:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;Format&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;rgba&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
 &lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;Image&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;resisedimage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;copyResize&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;aimage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;width:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
@@ -334,7 +334,7 @@ ces 1000px ne nous rappelle pas quelque chose? Il disait quoi déjà le &lt;code
 va pas faire de mal pour comprendre ce qui va suivre. Un pixel de notre image
 est un savant mélange d’intensité de rouge, de vert et de bleu (rappelez vous les trucs 
 moches que vous faisiez en Art Plastique). On parle de canal pour chaque couleur, du coup
-nous avons 3 canaux Rouge Vert Bleu, plus 1 autre appelé Alpha qui se rapporte à l’intensité de transparence de l’image.
+nous avons 3 canaux Rouge Vert Bleu, plus 1 autre appelé Alpha qui se rapporte à l’intensité de transparence du pixel.
 Comme nous sommes dans un format RGBA&lt;strong&gt;32&lt;/strong&gt; pour 32bits(4 octets ), il faut qu’un unique pixel tienne dans…. 32 bits !
 On a 4 canaux à faire entrer là-dedans, et pour éviter les disputes on fait un partage équitable, 
 32bits/4 canaux = 8 bits. Bon voilà, chacun pourra prendre une valeur codée sur 8 bits, 
@@ -370,7 +370,7 @@ avec le premier &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&
 &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;Les choses sérieuses commencent, une boucle &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;while&lt;/code&gt; va mouliner tant que l’on a pas traiter
+&lt;p&gt;Les choses sérieuses commencent, une boucle &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;while&lt;/code&gt; va mouliner tant que l’on a pas traité
 tous les chiffres binaires de la chaîne &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;binaryStringmessage&lt;/code&gt; :&lt;/p&gt;
 
 &lt;div class=&quot;language-dart highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;messaggelength&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;binaryStringmessage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
@@ -449,7 +449,7 @@ bloc trouvé, on stocke la paire de valeurs [&lt;code class=&quot;language-plain
 &lt;/ul&gt;
 
 &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;offsetarray&lt;/code&gt; devient le précieux résultat permettant de retrouver le message secret
-à l’aide de la position|longueur. Il faut donc pouvoir stocker ce tableau dans l’image. C’est
+à l’aide de la position/longueur. Il faut donc pouvoir stocker ce tableau dans l’image. C’est
 justement l’étape qui suit.&lt;/p&gt;
 
 &lt;p&gt;Pour cela une nouvelle variable de type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;String&lt;/code&gt; fait son apparition : &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stringtowrite&lt;/code&gt;.
@@ -586,7 +586,7 @@ en RGB &lt;em&gt;sans A&lt;/em&gt;:&lt;/p&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;Et pour finir voici la fonction principale, qui est non optimisée mais qui réutilise les
-même nom de variable et la même structure que dans le code Dart :&lt;/p&gt;
+même noms de variable et la même structure que dans le code Dart :&lt;/p&gt;
 
 &lt;div class=&quot;language-golang highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;imgRGBA&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RGBA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
 	&lt;span class=&quot;c&quot;&gt;// on supprime le canal Alpha, RGBA =&amp;gt; tableau octet format RGB&lt;/span&gt;
@@ -642,7 +642,7 @@ le message secret: DGSEESIEE&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;FL&lt;
 &lt;p&gt;&lt;strong&gt;FIN BRUTALE&lt;/strong&gt;&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;/assets/files/le_code.dart&quot;&gt;le_code.dart&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;/assets/files/decoder.go&quot;&gt;decoder.go&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;/assets/files/Challenge_DGSE_ESIEE_Steganosaurus/le_code.dart&quot;&gt;le_code.dart&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;/assets/files/Challenge_DGSE_ESIEE_Steganosaurus/decoder.go&quot;&gt;decoder.go&lt;/a&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://mega.nz/file/boQyCRZb#y6V-0ec5OSaMkJJHwkksvi1Hpa6nUEh-QbqS4Yo-j3Y&quot;&gt;message&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</content><author><name>TonyBounty™</name></author><category term="writeup" /><category term="DGSEESIEE" /><category term="Flutter" /><category term="Android" /><category term="Steganography" /><summary type="html">Avertissement : vous allez pénétrer dans les arcanes de la DGSE, il vous saurait gré de lire ce WriteUp avec la compilation du service en fond sonore, cliquez ici ou la</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://tonybounty.github.io/Challenge_DGSE_ESIEE_Steganosaurus/first.png" /><media:content medium="image" url="https://tonybounty.github.io/Challenge_DGSE_ESIEE_Steganosaurus/first.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
