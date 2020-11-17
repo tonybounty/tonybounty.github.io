@@ -38,7 +38,7 @@ metadata
 
 Effectivement, `file` reconnait un système de fichier FAT32, `binwalk` quant a lui va passer au
 peigne fin chaque octet du fichier pour essayer de trouver des en-têtes de format de fichier connus. Ainsi il
-trouve un fichier PNG d'une résolution de 100x514, des archives Zip etc... L'option **-e** permet
+trouve un fichier PNG d'une résolution de 1000x514, des archives Zip etc... L'option **-e** permet
 d'extraire automatiquement ce qu'il trouve.
 
 Gardons les résultats de `binwalk` pour plus tard, et essayons de monter le fichier pour 
@@ -101,7 +101,7 @@ Archive:  steganausorus.apk
 ```
 
 `AndroidManifest.xml`... c'est manifestement une application Android ! Pour naviguer et
-décompiler le contenu de ce paquet APK, nous utiliserons l'outil
+décompiler ce paquet APK, nous utiliserons l'outil
 [Jadx](https://github.com/skylot/jadx) *Dex to Java decompiler* :
 
 ```
@@ -125,9 +125,9 @@ L'application requière l'accès à 3 ressources :
 <figcaption>Permissions demandées par l'application</figcaption>
 </figure>
 
-La balise `<application>` et ses attributs nous renseigne sur l'application elle
+La balise `<application>` et ses attributs nous renseignent sur l'application elle
 même, comme son nom qui est `stegapp` dans `android:label` et surtout son point d'entrée
-dans le code par `android:name=io.flutter.app.FlutterApplication`, précisant qu'elle est la
+dans le code par `android:name=io.flutter.app.FlutterApplication`, précisant quelle est la
 première classe à appeler.
 
 <figure>
@@ -280,13 +280,13 @@ On paramètre le téléphone pour installer des applications non vérifiées, pu
 </figure>
 
 Un message secret à cacher dans une image... un nom évocateur... nous sommes
-très probablement sur une application de stéganographie (quel falair!). On test avec une belle image
+très probablement sur une application de stéganographie (quel flair!). On test avec une belle image
 de Labrador pour voir le résultat... Punaise ça rame ! En effet le machin souffre d'un
 **serieux** problème de performance (on a été prévenu), ça va être râpé pour l'analyse dynamique... 
 
 > Dans VsCode par exemple il possible (avec les extensions) de créer une nouvelle
-> application Flutter, coller le code que l'on a extrait, puis de faire une analyse dynamique
-> en mode live debug.
+> *application Flutter*, de coller le code que l'on a extrait, puis de faire une analyse dynamique
+> en mode *live debug*.
 
 Maintenant que l'on y voit un peu plus clair, il n'y
 a plus qu'a lire la documentation qui nous est fournie (le code quoi). Un tapotage sur le bouton
@@ -301,7 +301,7 @@ pour paramètres le chemin vers l'image `_image`, et le texte à dissimuler `myC
 Chaque caractère du message à dissimuler va être transformé en binaire sous forme d'une
 chaîne de caractère ASCII de type `String` à l'aide de la fonction `MessageToBinaryString()` (si
 c'est pas explicite ça). Un caractère occupera systématiquement 8 bits, si il fait moins on
-le *GaucheCapitonne(padLeft)* avec des 0.
+le *capitonne par la gauche(padLeft)* avec des 0.
 Par exemple, `BOB` donnera `01000010 01001111 01000010` (sans espace) :
 
 ```dart
@@ -322,7 +322,7 @@ L'image est ensuite lue et convertie au format RGBA puis redimensionnée de sort
 l'image ai une largeur de 1000 pixels. Cette première constante est très importante, car
 l'image finale embarquant le message fera systématiquement 1000 pixels de large. C'est un
 indicateur fort. D'autre part,
-ces 1000px ne nous rappelle pas quelque chose? Il disait quoi déjà le `binwalk` du début ?
+ces 1000px ne nous évoquent pas quelque chose? Il disait quoi déjà le `binwalk` du début ?
 
 ```dart
 A.Image aimage =A.Image.fromBytes(decodedImage.width,decodedImage.height, imgintlist, format: A.Format.rgba);
@@ -333,7 +333,7 @@ Un petit rappel sur le format RGBA32 (ou en français RVBA pour Rouge Vert Bleu 
 va pas faire de mal pour comprendre ce qui va suivre. Un pixel de notre image
 est un savant mélange d'intensité de rouge, de vert et de bleu (rappelez vous les trucs 
 moches que vous faisiez en Art Plastique). On parle de canal pour chaque couleur, du coup
-nous avons 3 canaux Rouge Vert Bleu, plus 1 autre appelé Alpha qui se rapporte à l'intensité de transparence de l'image.
+nous avons 3 canaux Rouge Vert Bleu, plus 1 autre appelé Alpha qui se rapporte à l'intensité de transparence du pixel.
 Comme nous sommes dans un format RGBA**32** pour 32bits(4 octets ), il faut qu'un unique pixel tienne dans.... 32 bits !
 On a 4 canaux à faire entrer là-dedans, et pour éviter les disputes on fait un partage équitable, 
 32bits/4 canaux = 8 bits. Bon voilà, chacun pourra prendre une valeur codée sur 8 bits, 
@@ -370,7 +370,7 @@ for (int i = 0;i < resisedimage.length;i++){
 }
 ```
 
-Les choses sérieuses commencent, une boucle `while` va mouliner tant que l'on a pas traiter
+Les choses sérieuses commencent, une boucle `while` va mouliner tant que l'on a pas traité
 tous les chiffres binaires de la chaîne `binaryStringmessage` :
 
 ```dart
@@ -451,7 +451,7 @@ Bon on récapitule un peu, on a dans l'ordre :
 - on fait cette recherche pour l'intégralité de notre message
 
 `offsetarray` devient le précieux résultat permettant de retrouver le message secret
-à l'aide de la position|longueur. Il faut donc pouvoir stocker ce tableau dans l'image. C'est
+à l'aide de la position/longueur. Il faut donc pouvoir stocker ce tableau dans l'image. C'est
 justement l'étape qui suit.
 
 Pour cela une nouvelle variable de type `String` fait son apparition : `stringtowrite`.
@@ -591,7 +591,7 @@ func imgToRGB(img *image.RGBA) (res []byte) {
 }
 ```
 Et pour finir voici la fonction principale, qui est non optimisée mais qui réutilise les
-même nom de variable et la même structure que dans le code Dart :
+même noms de variable et la même structure que dans le code Dart :
 
 ```golang
 func decode(imgRGBA *image.RGBA) (flag string) {
